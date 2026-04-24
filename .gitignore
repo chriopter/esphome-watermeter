@@ -1,0 +1,17 @@
+# ESPHome build artifacts
+.esphome/
+build/
+
+# Secrets (WiFi, API key, OTA password)
+secrets.yaml
+
+# Python
+__pycache__/
+*.pyc
+
+# Editor / OS
+.DS_Store
+*.swp
+*~
+.idea/
+.vscode/
