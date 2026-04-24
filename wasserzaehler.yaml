@@ -39,3 +39,8 @@ display:
     address: 0x3C
     lambda: |-
       it.print(0, 0, id(font_big), "Hallo Welt!");
+
+sensor:
+  - platform: wifi_signal
+    name: "WLAN Signal"
+    update_interval: 10s
