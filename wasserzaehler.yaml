@@ -32,13 +32,41 @@ font:
   - file: "gfonts://Roboto"
     id: font_big
     size: 20
+  - file: "gfonts://Roboto"
+    id: font_small
+    size: 14
+
+# Schritt 4: TTP223 Touch-Buttons
+# Minus auf GPIO3 (links), Plus auf GPIO4 (rechts)
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO3
+      mode:
+        input: true
+    name: "Button Minus"
+    id: btn_minus
+  - platform: gpio
+    pin:
+      number: GPIO4
+      mode:
+        input: true
+    name: "Button Plus"
+    id: btn_plus
 
 display:
   - platform: ssd1306_i2c
     model: "SSD1306 128x64"
     address: 0x3C
+    update_interval: 100ms
     lambda: |-
       it.print(0, 0, id(font_big), "99999.999");
+      if (id(btn_minus).state) {
+        it.print(0, 45, id(font_small), "LINKS");
+      }
+      if (id(btn_plus).state) {
+        it.print(128, 45, id(font_small), TextAlign::TOP_RIGHT, "RECHTS");
+      }
 
 sensor:
   - platform: wifi_signal
