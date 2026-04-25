@@ -23,8 +23,8 @@ zurückgeholt.
 | 5 V    | USB-C, Sensor VCC                             |
 | 3.3 V  | OLED VCC, TTP223 VCC, Pull-Up für GPIO4       |
 | GND    | gemeinsam                                     |
-| GPIO0  | OLED SCL                                      |
-| GPIO1  | OLED SDA                                      |
+| GPIO0  | OLED SDA                                      |
+| GPIO1  | OLED SCL                                      |
 | GPIO3  | TTP223 "−" (Kalibrierung runter, links)       |
 | GPIO4  | TTP223 "+" (Kalibrierung hoch, rechts)        |
 | GPIO5  | Sensor Signal (NPN, 10 kΩ Pull-Up nach 3.3 V) |
