@@ -82,7 +82,7 @@ sensor:
       mode:
         input: true
       inverted: true
-    internal_filter: 50ms
+    internal_filter: 13us
     timeout: 5min
     unit_of_measurement: "L/min"
     icon: "mdi:water-pump"
@@ -99,8 +99,3 @@ sensor:
           - logger.log:
               format: "PULSE! Total: %.0f L"
               args: ['x']
-    on_value:
-      then:
-        - logger.log:
-            format: "Rate: %.1f L/min"
-            args: ['x']
