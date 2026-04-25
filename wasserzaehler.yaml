@@ -22,10 +22,10 @@ wifi:
   password: !secret wifi_password
 
 # Schritt 1: OLED Display
-# SSD1306 128x64 auf GPIO0 (SDA) / GPIO1 (SCL), Adresse 0x3C
+# SSD1306 128x64 auf GPIO1 (SDA) / GPIO0 (SCL), Adresse 0x3C
 i2c:
-  sda: GPIO0
-  scl: GPIO1
+  sda: GPIO1
+  scl: GPIO0
   scan: true
 
 font:
@@ -72,3 +72,30 @@ sensor:
   - platform: wifi_signal
     name: "WLAN Signal"
     update_interval: 10s
+
+  # Schritt 2: Impulszähler am induktiven Sensor (NPN, active LOW)
+  # 1 Impuls = 1 Liter. Externer 10 kΩ Pull-Up an GPIO5 → 3.3V.
+  - platform: pulse_meter
+    name: "Wasser Durchfluss"
+    pin:
+      number: GPIO5
+      mode:
+        input: true
+      inverted: true
+    internal_filter: 50ms
+    timeout: 5min
+    unit_of_measurement: "L/min"
+    icon: "mdi:water-pump"
+    accuracy_decimals: 1
+    total:
+      name: "Wasser Impulse gesamt"
+      unit_of_measurement: "L"
+      icon: "mdi:water"
+      accuracy_decimals: 0
+      device_class: water
+      state_class: total_increasing
+    on_value:
+      then:
+        - logger.log:
+            format: "Impuls: %.1f L/min"
+            args: ['x']
