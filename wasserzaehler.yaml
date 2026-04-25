@@ -22,10 +22,10 @@ wifi:
   password: !secret wifi_password
 
 # Schritt 1: OLED Display
-# SSD1306 128x64 auf GPIO1 (SDA) / GPIO0 (SCL), Adresse 0x3C
+# SSD1306 128x64 auf GPIO0 (SDA) / GPIO1 (SCL), Adresse 0x3C
 i2c:
-  sda: GPIO1
-  scl: GPIO0
+  sda: GPIO0
+  scl: GPIO1
   scan: true
 
 font:
