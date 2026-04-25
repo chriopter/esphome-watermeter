@@ -75,11 +75,12 @@ sensor:
     update_interval: 10s
 
   # Schritt 2: Impulszähler am induktiven Sensor (NPN, active LOW)
-  # 1 Impuls = 1 Liter. Externer 10 kΩ Pull-Up an GPIO5 → 3.3V.
+  # 1 Impuls = 1 Liter. Externer 10 kΩ Pull-Up an GPIO21 → 3.3V.
+  # GPIO21 ist standardmäßig UART0 TX — Logger ist daher auf USB_SERIAL_JTAG umgestellt.
   - platform: pulse_meter
     name: "Wasser Durchfluss"
     pin:
-      number: GPIO5
+      number: GPIO21
       mode:
         input: true
       inverted: true
