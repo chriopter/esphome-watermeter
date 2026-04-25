@@ -27,7 +27,7 @@ zurückgeholt.
 | GPIO1  | OLED SCL                                      |
 | GPIO3  | TTP223 "−" (Kalibrierung runter, links)       |
 | GPIO4  | TTP223 "+" (Kalibrierung hoch, rechts)        |
-| GPIO5  | Sensor Signal (NPN, 10 kΩ Pull-Up nach 3.3 V) |
+| GPIO21 | Sensor Signal (NPN, 10 kΩ Pull-Up nach 3.3 V) |
 
 GPIO2/8/9 bleiben frei (Strapping-Pins).
 
