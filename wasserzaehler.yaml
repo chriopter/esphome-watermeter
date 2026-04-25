@@ -94,8 +94,13 @@ sensor:
       accuracy_decimals: 0
       device_class: water
       state_class: total_increasing
+      on_value:
+        then:
+          - logger.log:
+              format: "PULSE! Total: %.0f L"
+              args: ['x']
     on_value:
       then:
         - logger.log:
-            format: "Impuls: %.1f L/min"
+            format: "Rate: %.1f L/min"
             args: ['x']
