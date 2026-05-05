@@ -1,7 +1,3 @@
-substitutions:
-  # Entprellung fuer den induktiven Sensor. Der Zaehler liefert max. ca. 1 Hz.
-  min_activation_duration: 800ms
-
 esphome:
   name: wasserzaehler
   friendly_name: Wasserzähler
@@ -127,7 +123,8 @@ sensor:
       mode:
         input: true
       inverted: true
-    internal_filter: ${min_activation_duration}
+    # Entprellung fuer den induktiven Sensor. Der Zaehler liefert max. ca. 1 Hz.
+    internal_filter: 800ms
     internal_filter_mode: PULSE
     timeout: 5min
     unit_of_measurement: "L/min"
