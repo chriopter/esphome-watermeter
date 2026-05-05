@@ -66,7 +66,7 @@ text_sensor:
   # TODO: durch echte HA-utility_meter-Entity ersetzen.
   - platform: homeassistant
     id: ha_zaehlerstand
-    entity_id: sensor.wasserzaehler_total
+    entity_id: sensor.wasserzahler
 
 switch:
   - platform: template
