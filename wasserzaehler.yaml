@@ -44,6 +44,9 @@ globals:
   - id: blink_state
     type: bool
     initial_value: 'false'
+  - id: touch_locked
+    type: bool
+    initial_value: 'false'
 
 script:
   - id: blink_pulse
@@ -52,19 +55,26 @@ script:
       - lambda: 'id(blink_state) = true;'
       - delay: 150ms
       - lambda: 'id(blink_state) = false;'
-  - id: pulse_plus
-    mode: queued
-    then:
-      - sensor.template.publish:
-          id: water_pulse_delta
-          state: 1
-      - script.execute: blink_pulse
 
 text_sensor:
   # TODO: durch echte HA-utility_meter-Entity ersetzen.
   - platform: homeassistant
     id: ha_zaehlerstand
     entity_id: sensor.wasserzaehler_total
+
+switch:
+  - platform: template
+    name: "Touch Tastensperre"
+    id: touch_lock
+    icon: "mdi:lock"
+    optimistic: true
+    restore_mode: ALWAYS_OFF
+    turn_on_action:
+      - lambda: 'id(touch_locked) = true;'
+      - logger.log: "TOUCH LOCK ON"
+    turn_off_action:
+      - lambda: 'id(touch_locked) = false;'
+      - logger.log: "TOUCH LOCK OFF"
 
 binary_sensor:
   - platform: gpio
@@ -79,8 +89,21 @@ binary_sensor:
       - delayed_off: 30ms
     on_release:
       then:
-        - script.execute: pulse_plus
-        - logger.log: "MANUAL +1 L"
+        - if:
+            condition:
+              lambda: 'return !id(touch_locked);'
+            then:
+              - pulse_meter.set_total_pulses:
+                  id: flow
+                  value: !lambda |-
+                    if (!id(raw_total).has_state()) {
+                      return 1;
+                    }
+                    return (int) id(raw_total).state + 1;
+              - script.execute: blink_pulse
+              - logger.log: "MANUAL +1 L"
+            else:
+              - logger.log: "MANUAL +1 L IGNORED: TOUCH LOCKED"
 
 display:
   - platform: ssd1306_i2c
@@ -131,16 +154,13 @@ sensor:
     icon: "mdi:water-pump"
     accuracy_decimals: 1
     total:
+      name: "Wasser Impulse gesamt"
       id: raw_total
-      internal: true
+      unit_of_measurement: "L"
+      icon: "mdi:water"
+      accuracy_decimals: 0
+      device_class: water
+      state_class: total_increasing
       on_value:
         then:
-          - script.execute: pulse_plus
-
-  - platform: template
-    name: "Wasser Impuls Delta"
-    id: water_pulse_delta
-    unit_of_measurement: "L"
-    icon: "mdi:water"
-    accuracy_decimals: 0
-    update_interval: never
+          - script.execute: blink_pulse

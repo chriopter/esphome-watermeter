@@ -6,7 +6,9 @@ ESPHome-Firmware für einen ESP32-C3 SuperMini, die mit einem induktiven Sensor 
 
 ## Home Assistant
 
-Der ESP sendet `Wasser Impuls Delta` als Delta-Quelle: jeder echte Impuls veröffentlicht `+1 L`, die manuelle Korrektur ebenfalls `+1 L`. Der Utility Meter in Home Assistant sollte dafür `Delta values` aktivieren.
+Der ESP sendet `Wasser Impulse gesamt` als Gesamtzähler. Jeder echte Impuls erhöht diesen Zähler um 1 L; ein kurzer Tipp auf den TTP223 erhöht denselben Gesamtzähler manuell um 1 L. Der Utility Meter in Home Assistant kann diesen Gesamtzähler als Quelle nutzen; `Delta values` ist dafür nicht nötig.
+
+Die Entity `Touch Tastensperre` deaktiviert manuelle Korrekturen per TTP223. Nach einem Neustart ist die Tastensperre wieder aus.
 
 ## Hardware
 
