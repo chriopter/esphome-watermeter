@@ -1,5 +1,8 @@
 # Wasserzähler ESPHome
 
+
+<img width="2048" height="1152" alt="image" src="https://github.com/user-attachments/assets/b6a7d2c6-db03-42c1-bac7-4da6eab7282a" />
+
 ## Funktion
 
 ESPHome-Firmware für einen ESP32-C3 SuperMini, die mit einem induktiven Sensor die Impulse eines Diehl Corona MCI 108 Wasserzählers (1 L/Puls) zählt und an Home Assistant meldet. Home Assistant führt den eigentlichen Zählerstand; das OLED zeigt den HA-Zählerstand, den aktuellen Durchfluss und das WLAN-Signal. Ein TTP223-Touchbutton erlaubt manuelle +1-L-Korrekturen per kurzem Tipp.
