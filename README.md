@@ -26,3 +26,8 @@ ESPHome-Firmware für einen ESP32-C3 SuperMini, die mit einem induktiven Sensor 
 | GPIO21 | Sensor Signal (NPN, 10 kΩ Pull-Up 3V3)    |
 
 GPIO2/8/9 bleiben frei (Strapping-Pins).
+
+## Credits
+
+- Sensorhalterung (3D-Druck): [Inductive sensor holder for Diehl Corona MCI](https://www.printables.com/model/465845-inductive-sensor-holder-for-diehl-corona-mci) von *timn*
+- Referenz-ESPHome-Konfiguration: [timn/esphome-meters — water](https://github.com/timn/esphome-meters/tree/main/water)
