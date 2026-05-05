@@ -1,3 +1,7 @@
+substitutions:
+  # Entprellung fuer den induktiven Sensor. Der Zaehler liefert max. ca. 1 Hz.
+  min_activation_duration: 800ms
+
 esphome:
   name: wasserzaehler
   friendly_name: Wasserzähler
@@ -34,20 +38,14 @@ i2c:
 
 font:
   - file: "gfonts://Roboto"
-    id: font_big
-    size: 20
+    id: font_value
+    size: 24
   - file: "gfonts://Roboto"
     id: font_small
     size: 14
 
 globals:
-  - id: pulse_offset
-    type: int
-    initial_value: '0'
   - id: blink_state
-    type: bool
-    initial_value: 'false'
-  - id: show_hint
     type: bool
     initial_value: 'false'
 
@@ -58,12 +56,13 @@ script:
       - lambda: 'id(blink_state) = true;'
       - delay: 150ms
       - lambda: 'id(blink_state) = false;'
-  - id: hint_doubletap
-    mode: restart
+  - id: pulse_plus
+    mode: queued
     then:
-      - lambda: 'id(show_hint) = true;'
-      - delay: 2s
-      - lambda: 'id(show_hint) = false;'
+      - sensor.template.publish:
+          id: water_pulse_delta
+          state: 1
+      - script.execute: blink_pulse
 
 text_sensor:
   # TODO: durch echte HA-utility_meter-Entity ersetzen.
@@ -82,23 +81,10 @@ binary_sensor:
     filters:
       - delayed_on: 30ms
       - delayed_off: 30ms
-    on_multi_click:
-      - timing:
-          - ON for at most 0.4s
-          - OFF for at most 0.4s
-          - ON for at most 0.4s
-          - OFF for at least 0.2s
-        then:
-          - globals.set:
-              id: pulse_offset
-              value: !lambda 'return id(pulse_offset) + 1;'
-          - script.execute: blink_pulse
-          - logger.log: "MANUAL +1 L"
-      - timing:
-          - ON for at most 0.4s
-          - OFF for at least 0.6s
-        then:
-          - script.execute: hint_doubletap
+    on_release:
+      then:
+        - script.execute: pulse_plus
+        - logger.log: "MANUAL +1 L"
 
 display:
   - platform: ssd1306_i2c
@@ -108,23 +94,30 @@ display:
     update_interval: 250ms
     lambda: |-
       if (id(ha_zaehlerstand).has_state()) {
-        it.printf(0, 0, id(font_big), "%s", id(ha_zaehlerstand).state.c_str());
+        it.printf(0, 0, id(font_value), "%s", id(ha_zaehlerstand).state.c_str());
       } else {
-        it.print(0, 0, id(font_big), "---");
+        it.print(0, 5, id(font_small), "MISSING_ENTITY");
       }
-      if (id(show_hint)) {
-        it.print(0, 28, id(font_small), "Doppeltippen!");
+      if (id(flow).has_state()) {
+        it.printf(0, 42, id(font_small), "%.1f L/min", id(flow).state);
       } else {
-        it.printf(0, 28, id(font_small), "%.1f L/min", id(flow).state);
+        it.print(0, 42, id(font_small), "--.- L/min");
+      }
+      if (id(wifi_db).has_state()) {
+        it.printf(76, 42, id(font_small), "%.0f dB", id(wifi_db).state);
+      } else {
+        it.print(76, 42, id(font_small), "-- dB");
       }
       if (id(blink_state)) {
-        it.filled_circle(122, 6, 4);
+        it.filled_circle(119, 9, 8);
       }
 
 sensor:
   - platform: wifi_signal
     name: "WLAN Signal"
-    update_interval: 10s
+    id: wifi_db
+    update_interval: 60s
+    entity_category: diagnostic
 
   - platform: pulse_meter
     name: "Wasser Durchfluss"
@@ -134,7 +127,8 @@ sensor:
       mode:
         input: true
       inverted: true
-    internal_filter: 13us
+    internal_filter: $min_activation_duration
+    internal_filter_mode: PULSE
     timeout: 5min
     unit_of_measurement: "L/min"
     icon: "mdi:water-pump"
@@ -144,16 +138,12 @@ sensor:
       internal: true
       on_value:
         then:
-          - script.execute: blink_pulse
+          - script.execute: pulse_plus
 
   - platform: template
-    name: "Wasser Impulse gesamt"
-    id: water_total
+    name: "Wasser Impuls Delta"
+    id: water_pulse_delta
     unit_of_measurement: "L"
     icon: "mdi:water"
     accuracy_decimals: 0
-    device_class: water
-    state_class: total_increasing
-    update_interval: 1s
-    lambda: |-
-      return id(raw_total).state + id(pulse_offset);
+    update_interval: never

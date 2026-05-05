@@ -2,7 +2,11 @@
 
 ## Funktion
 
-ESPHome-Firmware für einen ESP32-C3 SuperMini, die mit einem induktiven Sensor die Impulse eines Diehl Corona MCI 108 Wasserzählers (1 L/Puls) zählt und an Home Assistant meldet. Das OLED zeigt den HA-Zählerstand und den aktuellen Durchfluss; ein TTP223-Touchbutton erlaubt manuelle +1-L-Korrekturen per Doppeltipp.
+ESPHome-Firmware für einen ESP32-C3 SuperMini, die mit einem induktiven Sensor die Impulse eines Diehl Corona MCI 108 Wasserzählers (1 L/Puls) zählt und an Home Assistant meldet. Home Assistant führt den eigentlichen Zählerstand; das OLED zeigt den HA-Zählerstand, den aktuellen Durchfluss und das WLAN-Signal. Ein TTP223-Touchbutton erlaubt manuelle +1-L-Korrekturen per kurzem Tipp.
+
+## Home Assistant
+
+Der ESP sendet `Wasser Impuls Delta` als Delta-Quelle: jeder echte Impuls veröffentlicht `+1 L`, die manuelle Korrektur ebenfalls `+1 L`. Der Utility Meter in Home Assistant sollte dafür `Delta values` aktivieren.
 
 ## Hardware
 
@@ -22,7 +26,7 @@ ESPHome-Firmware für einen ESP32-C3 SuperMini, die mit einem induktiven Sensor 
 | GND    | gemeinsam                                 |
 | GPIO0  | OLED SDA                                  |
 | GPIO1  | OLED SCL                                  |
-| GPIO3  | TTP223 (Doppeltipp = +1 L)                |
+| GPIO3  | TTP223 (kurz = +1 L)                      |
 | GPIO21 | Sensor Signal (NPN, 10 kΩ Pull-Up 3V3)    |
 
 GPIO2/8/9 bleiben frei (Strapping-Pins).
