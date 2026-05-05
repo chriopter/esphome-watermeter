@@ -21,9 +21,12 @@ ota:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
+  ap:
+    ssid: "Wasserzaehler Fallback"
+    password: !secret wifi_ap_password
 
-# Schritt 1: OLED Display
-# SSD1306 128x64 auf GPIO0 (SDA) / GPIO1 (SCL), Adresse 0x3C
+captive_portal:
+
 i2c:
   sda: GPIO0
   scl: GPIO1
@@ -37,36 +40,85 @@ font:
     id: font_small
     size: 14
 
-# Schritt 4: TTP223 Touch-Buttons
-# Minus auf GPIO3 (links), Plus auf GPIO4 (rechts)
+globals:
+  - id: pulse_offset
+    type: int
+    initial_value: '0'
+  - id: blink_state
+    type: bool
+    initial_value: 'false'
+  - id: show_hint
+    type: bool
+    initial_value: 'false'
+
+script:
+  - id: blink_pulse
+    mode: restart
+    then:
+      - lambda: 'id(blink_state) = true;'
+      - delay: 150ms
+      - lambda: 'id(blink_state) = false;'
+  - id: hint_doubletap
+    mode: restart
+    then:
+      - lambda: 'id(show_hint) = true;'
+      - delay: 2s
+      - lambda: 'id(show_hint) = false;'
+
+text_sensor:
+  # TODO: durch echte HA-utility_meter-Entity ersetzen.
+  - platform: homeassistant
+    id: ha_zaehlerstand
+    entity_id: sensor.wasserzaehler_total
+
 binary_sensor:
   - platform: gpio
     pin:
       number: GPIO3
       mode:
         input: true
-    name: "Button Minus"
-    id: btn_minus
-  - platform: gpio
-    pin:
-      number: GPIO4
-      mode:
-        input: true
-    name: "Button Plus"
-    id: btn_plus
+    name: "Button"
+    id: btn
+    filters:
+      - delayed_on: 30ms
+      - delayed_off: 30ms
+    on_multi_click:
+      - timing:
+          - ON for at most 0.4s
+          - OFF for at most 0.4s
+          - ON for at most 0.4s
+          - OFF for at least 0.2s
+        then:
+          - globals.set:
+              id: pulse_offset
+              value: !lambda 'return id(pulse_offset) + 1;'
+          - script.execute: blink_pulse
+          - logger.log: "MANUAL +1 L"
+      - timing:
+          - ON for at most 0.4s
+          - OFF for at least 0.6s
+        then:
+          - script.execute: hint_doubletap
 
 display:
   - platform: ssd1306_i2c
     model: "SSD1306 128x64"
     address: 0x3C
-    update_interval: 100ms
+    rotation: 180°
+    update_interval: 250ms
     lambda: |-
-      it.print(0, 0, id(font_big), "99999.999");
-      if (id(btn_minus).state) {
-        it.print(0, 45, id(font_small), "LINKS");
+      if (id(ha_zaehlerstand).has_state()) {
+        it.printf(0, 0, id(font_big), "%s", id(ha_zaehlerstand).state.c_str());
+      } else {
+        it.print(0, 0, id(font_big), "---");
       }
-      if (id(btn_plus).state) {
-        it.print(128, 45, id(font_small), TextAlign::TOP_RIGHT, "RECHTS");
+      if (id(show_hint)) {
+        it.print(0, 28, id(font_small), "Doppeltippen!");
+      } else {
+        it.printf(0, 28, id(font_small), "%.1f L/min", id(flow).state);
+      }
+      if (id(blink_state)) {
+        it.filled_circle(122, 6, 4);
       }
 
 sensor:
@@ -74,11 +126,9 @@ sensor:
     name: "WLAN Signal"
     update_interval: 10s
 
-  # Schritt 2: Impulszähler am induktiven Sensor (NPN, active LOW)
-  # 1 Impuls = 1 Liter. Externer 10 kΩ Pull-Up an GPIO21 → 3.3V.
-  # GPIO21 ist standardmäßig UART0 TX — Logger ist daher auf USB_SERIAL_JTAG umgestellt.
   - platform: pulse_meter
     name: "Wasser Durchfluss"
+    id: flow
     pin:
       number: GPIO21
       mode:
@@ -90,14 +140,20 @@ sensor:
     icon: "mdi:water-pump"
     accuracy_decimals: 1
     total:
-      name: "Wasser Impulse gesamt"
-      unit_of_measurement: "L"
-      icon: "mdi:water"
-      accuracy_decimals: 0
-      device_class: water
-      state_class: total_increasing
+      id: raw_total
+      internal: true
       on_value:
         then:
-          - logger.log:
-              format: "PULSE! Total: %.0f L"
-              args: ['x']
+          - script.execute: blink_pulse
+
+  - platform: template
+    name: "Wasser Impulse gesamt"
+    id: water_total
+    unit_of_measurement: "L"
+    icon: "mdi:water"
+    accuracy_decimals: 0
+    device_class: water
+    state_class: total_increasing
+    update_interval: 1s
+    lambda: |-
+      return id(raw_total).state + id(pulse_offset);

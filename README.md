@@ -1,37 +1,28 @@
 # Wasserzähler ESPHome
 
-Impulszähler für einen MOM/Diehl Corona MCI 108 Wasserzähler auf Basis eines
-ESP32-C3 SuperMini mit induktivem Sensor (LJ18A3-8-Z/BX-5V), OLED-Display
-und zwei TTP223 Touch-Buttons zur manuellen Kalibrierung.
+## Funktion
 
-Der Zählerstand selbst wird nicht auf dem ESP gespeichert (Flash-Schonung),
-sondern über Home Assistant `utility_meter` getrackt und zur Anzeige
-zurückgeholt.
+ESPHome-Firmware für einen ESP32-C3 SuperMini, die mit einem induktiven Sensor die Impulse eines Diehl Corona MCI 108 Wasserzählers (1 L/Puls) zählt und an Home Assistant meldet. Das OLED zeigt den HA-Zählerstand und den aktuellen Durchfluss; ein TTP223-Touchbutton erlaubt manuelle +1-L-Korrekturen per Doppeltipp.
 
 ## Hardware
 
 - ESP32-C3 SuperMini (externe 2.4 GHz SMA-Antenne)
-- Induktivsensor LJ18A3-8-Z/BX-5V (M18, NPN, Normally Open, 5 V, 8 mm)
+- Induktivsensor LJ18A3-8-Z/BX-5V (M18, NPN, NO, 5 V, 8 mm)
 - OLED 0.96" SSD1306 128×64 I²C
-- 2× TTP223 kapazitive Touch-Module
+- TTP223 kapazitives Touch-Modul
 - USB-C Einbaubuchse (5 V), IP67 Transparentgehäuse 100×68×40 mm
+- Externer 10 kΩ Pull-Up Sensor → 3.3 V
 
-## Pinout
+## GPIO Pinout
 
-| Pin    | Funktion                                      |
-|--------|-----------------------------------------------|
-| 5 V    | USB-C, Sensor VCC                             |
-| 3.3 V  | OLED VCC, TTP223 VCC, Pull-Up für GPIO4       |
-| GND    | gemeinsam                                     |
-| GPIO0  | OLED SDA                                      |
-| GPIO1  | OLED SCL                                      |
-| GPIO3  | TTP223 "−" (Kalibrierung runter, links)       |
-| GPIO4  | TTP223 "+" (Kalibrierung hoch, rechts)        |
-| GPIO21 | Sensor Signal (NPN, 10 kΩ Pull-Up nach 3.3 V) |
+| Pin    | Funktion                                  |
+|--------|-------------------------------------------|
+| 5 V    | USB-C, Sensor VCC                         |
+| 3.3 V  | OLED VCC, TTP223 VCC, Pull-Up GPIO21      |
+| GND    | gemeinsam                                 |
+| GPIO0  | OLED SDA                                  |
+| GPIO1  | OLED SCL                                  |
+| GPIO3  | TTP223 (Doppeltipp = +1 L)                |
+| GPIO21 | Sensor Signal (NPN, 10 kΩ Pull-Up 3V3)    |
 
 GPIO2/8/9 bleiben frei (Strapping-Pins).
-
-## Credits
-
-- Sensorhalterung (3D-Druck): [Inductive sensor holder for Diehl Corona MCI](https://www.printables.com/model/465845-inductive-sensor-holder-for-diehl-corona-mci) von *timn*
-- Referenz-ESPHome-Konfiguration: [timn/esphome-meters — water](https://github.com/timn/esphome-meters/tree/main/water)
