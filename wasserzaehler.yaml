@@ -84,6 +84,7 @@ binary_sensor:
         input: true
     name: "Button"
     id: btn
+    internal: true
     filters:
       - delayed_on: 30ms
       - delayed_off: 30ms
@@ -102,8 +103,6 @@ binary_sensor:
                     return (int) id(raw_total).state + 1;
               - script.execute: blink_pulse
               - logger.log: "MANUAL +1 L"
-            else:
-              - logger.log: "MANUAL +1 L IGNORED: TOUCH LOCKED"
 
 display:
   - platform: ssd1306_i2c
@@ -146,9 +145,7 @@ sensor:
       mode:
         input: true
       inverted: true
-    # Entprellung fuer den induktiven Sensor. Der Zaehler liefert max. ca. 1 Hz.
-    internal_filter: 800ms
-    internal_filter_mode: PULSE
+    internal_filter: 13us
     timeout: 5min
     unit_of_measurement: "L/min"
     icon: "mdi:water-pump"
@@ -163,4 +160,5 @@ sensor:
       state_class: total_increasing
       on_value:
         then:
+          - logger.log: "SENSOR +1 L"
           - script.execute: blink_pulse
