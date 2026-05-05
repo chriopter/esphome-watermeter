@@ -127,7 +127,7 @@ sensor:
       mode:
         input: true
       inverted: true
-    internal_filter: $min_activation_duration
+    internal_filter: ${min_activation_duration}
     internal_filter_mode: PULSE
     timeout: 5min
     unit_of_measurement: "L/min"
