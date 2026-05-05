@@ -1,7 +1,10 @@
 # Wasserzähler ESPHome
 
 
-<img width="2048" height="1152" alt="image" src="https://github.com/user-attachments/assets/b6a7d2c6-db03-42c1-bac7-4da6eab7282a" />
+<img width="800" alt="image" src="https://github.com/user-attachments/assets/b6a7d2c6-db03-42c1-bac7-4da6eab7282a" />
+
+<img width="800" alt="image" src="https://github.com/user-attachments/assets/de795593-85bb-4de0-8c0e-540b7bfe3cc5" />
+
 
 ## Funktion
 
