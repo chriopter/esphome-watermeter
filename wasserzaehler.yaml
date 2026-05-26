@@ -44,9 +44,27 @@ globals:
   - id: blink_state
     type: bool
     initial_value: 'false'
+
   - id: show_manual_sent
     type: bool
     initial_value: 'false'
+
+  # Nur seit Boot, nicht persistent.
+  # Home Assistant soll daraus den dauerhaften Zähler bilden.
+  - id: water_total
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  - id: last_pulse_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
+  - id: flow_l_min
+    type: float
+    restore_value: false
+    initial_value: '0.0'
 
 script:
   - id: blink_pulse
@@ -55,6 +73,7 @@ script:
       - lambda: 'id(blink_state) = true;'
       - delay: 150ms
       - lambda: 'id(blink_state) = false;'
+
   - id: manual_sent_hint
     mode: restart
     then:
@@ -63,7 +82,7 @@ script:
       - lambda: 'id(show_manual_sent) = false;'
 
 text_sensor:
-  # TODO: durch echte HA-utility_meter-Entity ersetzen.
+  # HA-Utility-Meter / korrigierter Zählerstand
   - platform: homeassistant
     id: ha_zaehlerstand
     entity_id: sensor.wasserzahler
@@ -76,7 +95,15 @@ switch:
     optimistic: true
     restore_mode: ALWAYS_OFF
 
+button:
+  - platform: restart
+    name: "ESP Neustart"
+    id: esp_restart_button
+    icon: "mdi:restart"
+    entity_category: diagnostic
+
 binary_sensor:
+  # Manueller +1-Liter-Button
   - platform: gpio
     pin:
       number: GPIO3
@@ -94,16 +121,48 @@ binary_sensor:
             condition:
               switch.is_off: touch_lock
             then:
-              - pulse_meter.set_total_pulses:
-                  id: flow
-                  value: !lambda |-
-                    if (!id(raw_total).has_state()) {
-                      return 1;
-                    }
-                    return (int) id(raw_total).state + 1;
+              - lambda: |-
+                  id(water_total) += 1;
+                  id(raw_total).publish_state(id(water_total));
               - script.execute: blink_pulse
               - script.execute: manual_sent_hint
               - logger.log: "MANUAL +1 L"
+
+  # Entprellter Wassersensor
+  # 100 ms stabil AN = 1 Liter
+  # 100 ms stabil AUS = wieder bereit für nächsten Liter
+  - platform: gpio
+    pin:
+      number: GPIO21
+      mode:
+        input: true
+      inverted: true
+    name: "Wasser Impuls"
+    id: water_pulse
+    internal: true
+    filters:
+      - delayed_on: 100ms
+      - delayed_off: 100ms
+    on_press:
+      then:
+        - lambda: |-
+            const uint32_t now = millis();
+
+            if (id(last_pulse_ms) > 0) {
+              const uint32_t dt = now - id(last_pulse_ms);
+
+              if (dt > 0) {
+                id(flow_l_min) = 60000.0f / (float) dt;
+                id(flow).publish_state(id(flow_l_min));
+              }
+            }
+
+            id(last_pulse_ms) = now;
+
+            id(water_total) += 1;
+            id(raw_total).publish_state(id(water_total));
+        - logger.log: "SENSOR +1 L"
+        - script.execute: blink_pulse
 
 display:
   - platform: ssd1306_i2c
@@ -117,6 +176,7 @@ display:
       } else {
         it.print(0, 5, id(font_small), "MISSING_ENTITY");
       }
+
       if (id(show_manual_sent)) {
         it.print(0, 42, id(font_small), "+1 gesendet");
       } else if (id(flow).has_state()) {
@@ -124,11 +184,13 @@ display:
       } else {
         it.print(0, 42, id(font_small), "--.- L/min");
       }
+
       if (id(wifi_db).has_state()) {
         it.printf(76, 42, id(font_small), "%.0f dB", id(wifi_db).state);
       } else {
         it.print(76, 42, id(font_small), "-- dB");
       }
+
       if (id(blink_state)) {
         it.filled_circle(119, 9, 8);
       }
@@ -140,28 +202,41 @@ sensor:
     update_interval: 60s
     entity_category: diagnostic
 
-  - platform: pulse_meter
+  # Ursprünglicher Name für den Durchfluss
+  - platform: template
     name: "Durchfluss"
     id: flow
-    pin:
-      number: GPIO21
-      mode:
-        input: true
-      inverted: true
-    internal_filter: 13us
-    timeout: 5min
     unit_of_measurement: "L/min"
     icon: "mdi:water-pump"
     accuracy_decimals: 1
-    total:
-      name: "Impulse gesamt"
-      id: raw_total
-      unit_of_measurement: "L"
-      icon: "mdi:water"
-      accuracy_decimals: 0
-      device_class: water
-      state_class: total_increasing
-      on_value:
-        then:
-          - logger.log: "SENSOR +1 L"
-          - script.execute: blink_pulse
+    device_class: volume_flow_rate
+    state_class: measurement
+    update_interval: 1s
+    lambda: |-
+      const uint32_t now = millis();
+
+      if (id(last_pulse_ms) == 0) {
+        id(flow_l_min) = 0.0f;
+        return 0.0f;
+      }
+
+      if ((now - id(last_pulse_ms)) > 15000) {
+        id(flow_l_min) = 0.0f;
+        return 0.0f;
+      }
+
+      return id(flow_l_min);
+
+  # Ursprünglicher Name, damit HA den Zähler wieder wie vorher aufgreift
+  # Zählt nur seit Boot; HA kann Reset auf 0 bei total_increasing verarbeiten.
+  - platform: template
+    name: "Impulse gesamt"
+    id: raw_total
+    unit_of_measurement: "L"
+    icon: "mdi:water"
+    accuracy_decimals: 0
+    device_class: water
+    state_class: total_increasing
+    update_interval: 10s
+    lambda: |-
+      return id(water_total);
